@@ -2,97 +2,167 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>520 宠物来信</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- ============ 海报舞台 ============ -->
-  <!-- stage: 负责把 1080x1920 的固定画布等比缩放到手机屏幕宽度 -->
-  <div class="stage" id="stage">
-    <!-- poster: 永远是 1080x1920 的原生画布。所有坐标都基于这个尺寸 -->
-    <div class="poster" id="poster">
-      <!-- Layer 1: 干净背景模板（无旧文字） -->
-      <img
-        class="layer layer-bg"
-        id="layer-bg"
-        src="assets/02_template_blank_all_text.png"
-        alt=""
-        draggable="false"
-      />
+  <div class="app" id="app">
 
-      <!-- Layer 2: 宠物照片（polygon 裁切到拍立得窗口内） -->
-      <div class="layer layer-photo" id="layer-photo">
-        <img
-          class="pet-photo"
-          id="pet-photo"
-          src=""
-          alt=""
-          draggable="false"
-        />
+    <!-- ========== Page 1: 上传页 ========== -->
+    <section class="page page-upload active" id="page-upload">
+      <div class="page-inner">
+        <h1 class="page-title">写下你的宠物故事</h1>
+        <p class="page-subtitle">上传一张照片，开始收到它的来信</p>
+
+        <!-- 照片上传 + 编辑区 -->
+        <div class="upload-area" id="upload-area">
+          <div class="upload-placeholder" id="upload-placeholder">
+            <div class="upload-icon">📷</div>
+            <p>点击上传宠物照片</p>
+          </div>
+          <div class="photo-editor hidden" id="photo-editor">
+            <div class="photo-crop-container" id="photo-crop-container">
+              <img class="photo-preview" id="photo-preview" src="" alt="" draggable="false" />
+            </div>
+            <div class="editor-controls">
+              <button type="button" class="btn-editor" id="btn-zoom-out">-</button>
+              <input type="range" id="zoom-slider" min="100" max="300" value="100" class="zoom-slider" />
+              <button type="button" class="btn-editor" id="btn-zoom-in">+</button>
+            </div>
+            <button type="button" class="btn-reupload" id="btn-reupload">重新选择</button>
+          </div>
+          <input type="file" id="input-photo" accept="image/*" class="hidden-input" />
+        </div>
+
+        <!-- 昵称 -->
+        <div class="form-field">
+          <label class="form-label">宠物昵称</label>
+          <input type="text" id="input-petname" class="form-input" maxlength="8" placeholder="给它取个名字吧" />
+        </div>
+
+        <!-- 宠物类型 -->
+        <div class="form-field">
+          <label class="form-label">宠物类型</label>
+          <div class="type-selector" id="type-selector">
+            <button type="button" class="type-btn active" data-type="cat">🐱 猫咪</button>
+            <button type="button" class="type-btn" data-type="dog">🐶 狗狗</button>
+            <button type="button" class="type-btn" data-type="other">🐾 其他</button>
+          </div>
+        </div>
+
+        <!-- 性格标签 -->
+        <div class="form-field">
+          <label class="form-label">性格标签 <span class="form-hint">（选填，最多2个）</span></label>
+          <div class="tag-selector" id="tag-selector">
+            <button type="button" class="tag-btn" data-tag="粘人">粘人</button>
+            <button type="button" class="tag-btn" data-tag="高冷">高冷</button>
+            <button type="button" class="tag-btn" data-tag="调皮">调皮</button>
+            <button type="button" class="tag-btn" data-tag="温柔">温柔</button>
+            <button type="button" class="tag-btn" data-tag="话痨">话痨</button>
+            <button type="button" class="tag-btn" data-tag="贪吃">贪吃</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" id="btn-next-1" disabled>下一步</button>
       </div>
+    </section>
 
-      <!-- Layer 3: 昵称徽标 -->
-      <div class="layer layer-text text-petname" id="text-petname"></div>
+    <!-- ========== Page 2: 事件选择页 ========== -->
+    <section class="page page-events" id="page-events">
+      <div class="page-inner">
+        <h1 class="page-title">选择它最近做的事</h1>
+        <p class="page-subtitle">最多选3个，我们帮它写成告白信</p>
 
-      <!-- Layer 4: 关键词标签 -->
-      <div class="layer layer-text text-tag" id="text-tag"></div>
+        <div class="events-grid" id="events-grid">
+          <div class="event-card" data-event="nap">
+            <div class="event-emoji">😴</div>
+            <div class="event-text">陪我午睡</div>
+          </div>
+          <div class="event-card" data-event="rub">
+            <div class="event-emoji">🥰</div>
+            <div class="event-text">蹭蹭我</div>
+          </div>
+          <div class="event-card" data-event="wait">
+            <div class="event-emoji">🚪</div>
+            <div class="event-text">等我回家</div>
+          </div>
+          <div class="event-card" data-event="stare">
+            <div class="event-emoji">👀</div>
+            <div class="event-text">偷偷看我</div>
+          </div>
+          <div class="event-card" data-event="knead">
+            <div class="event-emoji">🐾</div>
+            <div class="event-text">踩奶</div>
+          </div>
+          <div class="event-card" data-event="purr">
+            <div class="event-emoji">💤</div>
+            <div class="event-text">呼噜呼噜</div>
+          </div>
+          <div class="event-card" data-event="gift">
+            <div class="event-emoji">🎁</div>
+            <div class="event-text">送我"礼物"</div>
+          </div>
+          <div class="event-card" data-event="comfort">
+            <div class="event-emoji">💕</div>
+            <div class="event-text">安慰难过的我</div>
+          </div>
+        </div>
 
-      <!-- Layer 5: 信的正文 -->
-      <div class="layer layer-text text-letter" id="text-letter"></div>
-
-      <!-- Layer 6: 品牌 -->
-      <div class="layer layer-brand" id="layer-brand">CHUNKE &#9825;</div>
-
-      <!-- Layer 7: 二维码 -->
-      <div class="layer layer-qr" id="layer-qr">
-        <img class="qr-img" id="qr-img" src="" alt="" draggable="false" />
+        <div class="events-footer">
+          <button type="button" class="btn-back" id="btn-back-2">上一步</button>
+          <button type="button" class="btn-primary" id="btn-next-2" disabled>生成来信</button>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <!-- ========== Page 3: 告白信生成页 ========== -->
+    <section class="page page-result" id="page-result">
+      <div class="page-inner">
+        <p class="result-hint">长按保存 or 点击下方按钮</p>
+
+        <!-- 海报画布（1080x1920 缩放到屏幕） -->
+        <div class="poster-stage" id="poster-stage">
+          <div class="poster" id="poster">
+            <!-- Layer 1: 干净背景 -->
+            <img class="layer layer-bg" src="assets/02_template_blank_all_text.png" alt="" draggable="false" />
+
+            <!-- Layer 2: 宠物照片 polygon 裁切 -->
+            <div class="layer layer-photo">
+              <img class="pet-photo" id="result-photo" src="" alt="" draggable="false" />
+            </div>
+
+            <!-- Layer 3: 昵称 -->
+            <div class="layer text-petname" id="result-petname"></div>
+
+            <!-- Layer 4: 标签 -->
+            <div class="layer text-tag" id="result-tag"></div>
+
+            <!-- Layer 5: 信正文 -->
+            <div class="layer text-letter" id="result-letter"><span></span></div>
+
+            <!-- Layer 6: 品牌 -->
+            <div class="layer layer-brand">CHUNKE &#9825;</div>
+
+            <!-- Layer 7: 二维码 -->
+            <div class="layer layer-qr">
+              <img class="qr-img" id="result-qr" src="assets/sample_qr.png" alt="" draggable="false" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作按钮（海报外部） -->
+        <div class="result-actions">
+          <button type="button" class="btn-primary btn-save" id="btn-save">保存海报到相册</button>
+          <button type="button" class="btn-secondary" id="btn-regenerate">换一封信</button>
+          <button type="button" class="btn-back" id="btn-back-3">重新开始</button>
+        </div>
+      </div>
+    </section>
+
   </div>
 
-  <!-- ============ 编辑面板（海报外部） ============ -->
-  <section class="panel">
-    <h2 class="panel-title">定制你的来信</h2>
-
-    <label class="field">
-      <span class="field-label">宠物昵称</span>
-      <input id="input-petname" type="text" maxlength="8" placeholder="小可爱" />
-    </label>
-
-    <label class="field">
-      <span class="field-label">关键词 / 标签</span>
-      <input id="input-tag" type="text" maxlength="18" placeholder="#今天也想和你贴贴#" />
-    </label>
-
-    <label class="field">
-      <span class="field-label">信的正文</span>
-      <textarea id="input-letter" rows="5" maxlength="120" placeholder="谢谢你愿意做我的家人..."></textarea>
-    </label>
-
-    <label class="field">
-      <span class="field-label">上传宠物照片</span>
-      <input id="input-photo" type="file" accept="image/*" />
-    </label>
-
-    <label class="field">
-      <span class="field-label">上传二维码（可选）</span>
-      <input id="input-qr" type="file" accept="image/*" />
-    </label>
-
-    <!-- 保存按钮 —— 明确在海报画布外部 -->
-    <button id="btn-save" class="btn-save" type="button">保存海报到相册</button>
-
-    <p class="hint">
-      提示：保存后的图片为 1080 × 1920 PNG，可直接分享朋友圈或小红书。
-    </p>
-  </section>
-
-  <!-- html2canvas 用于把 1080x1920 DOM 导出为 PNG -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="app.js"></script>
 </body>
