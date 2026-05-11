@@ -1,0 +1,307 @@
+/* ==========================================================
+   520 宠物来信 H5
+   核心原则：
+     1. 海报 .poster 永远是 1080x1920 的原生画布
+     2. 所有子元素定位都基于 1080 坐标系 (px)
+     3. 通过 JS 给 .poster 加 transform: scale(...) 适配手机宽度
+     4. 保存按钮在海报外部，不会被导出
+   ========================================================== */
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f6efe6;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: #4a3a30;
+  overflow-x: hidden;
+}
+
+/* ---------- Stage：负责把 1080x1920 的海报缩放到屏幕宽度 ---------- */
+.stage {
+  /* 宽度 = 屏幕宽度；高度由 JS 按缩放后的海报高度设置 */
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+  background: #f6efe6;
+}
+
+/* ---------- Poster：固定 1080x1920 原生画布 ---------- */
+.poster {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  transform-origin: top left; /* 缩放基点在左上角，便于 stage 高度对齐 */
+  background: #ffffff;
+  overflow: hidden;
+  /* 禁止用户交互干扰截图 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.layer {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ---------- Layer 1: 背景模板 ---------- */
+.layer-bg {
+  top: 0;
+  left: 0;
+  width: 1080px;
+  height: 1920px;
+  display: block;
+}
+
+/* ---------- Layer 2: 宠物照片（polygon 裁切） ----------
+   拍立得窗口 polygon (来自 poster_config.json):
+     [214,480] [873,426] [913,844] [262,902]
+   用整张 1080x1920 的 layer 覆盖，clip-path 负责裁形状，
+   内部的 .pet-photo 用 object-fit: cover 填满包围盒。
+*/
+.layer-photo {
+  top: 0;
+  left: 0;
+  width: 1080px;
+  height: 1920px;
+  /* 直接在全尺寸画布上裁切 —— 坐标即 polygon 原始数值 */
+  clip-path: polygon(
+    214px 480px,
+    873px 426px,
+    913px 844px,
+    262px 902px
+  );
+  -webkit-clip-path: polygon(
+    214px 480px,
+    873px 426px,
+    913px 844px,
+    262px 902px
+  );
+  overflow: hidden;
+}
+
+.pet-photo {
+  /* 把照片定位到拍立得窗口的包围盒，并略微带一点旋转 */
+  position: absolute;
+  /* 包围盒: x ∈ [214, 913], y ∈ [426, 902] => 宽 699, 高 476 */
+  left: 214px;
+  top: 426px;
+  width: 699px;
+  height: 476px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  /* 轻微旋转对齐拍立得的 -4° 倾斜 */
+  transform: rotate(-4deg);
+  transform-origin: center center;
+  background: #eee;
+}
+
+/* ---------- Layer 3/4/5: 动态文字 ----------
+   用每个区域 polygon 的外接矩形做定位框，再微调。
+*/
+
+/* 昵称徽标 polygon 包围盒：x∈[211,394], y∈[450,523] => 183x73 */
+.text-petname {
+  left: 211px;
+  top: 450px;
+  width: 183px;
+  height: 73px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-4deg);
+  transform-origin: center center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+/* 关键词 polygon 包围盒：x∈[295,797], y∈[905,1005] => 502x100 */
+.text-tag {
+  left: 295px;
+  top: 905px;
+  width: 502px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-4deg);
+  transform-origin: center center;
+  font-size: 34px;
+  font-weight: 500;
+  color: #6a4a3c;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* 信正文 polygon 包围盒：x∈[234,923], y∈[958,1444] => 689x486 */
+.text-letter {
+  left: 234px;
+  top: 958px;
+  width: 689px;
+  height: 486px;
+  padding: 70px 30px 20px; /* 顶部留出给 tagText 的空间 */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: center;
+  transform: rotate(-4deg);
+  transform-origin: center center;
+  font-size: 34px;
+  line-height: 1.7;
+  color: #6a4a3c;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 信正文内部用一个盒子保证多行居中 */
+.text-letter > span {
+  display: block;
+  width: 100%;
+}
+
+/* ---------- Layer 6: 品牌 ---------- */
+.layer-brand {
+  left: 412px;
+  top: 1411px;
+  width: 258px;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: #b08a6b;
+  /* 弱露出：低对比、无描边 */
+  opacity: 0.85;
+}
+
+/* ---------- Layer 7: 二维码 ---------- */
+.layer-qr {
+  left: 422px;
+  top: 1547px;
+  width: 239px;
+  height: 239px;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+.qr-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.qr-img[src=""],
+.qr-img:not([src]) {
+  display: none;
+}
+
+/* ==========================================================
+   编辑面板（海报外部，不会被导出）
+   ========================================================== */
+.panel {
+  max-width: 520px;
+  margin: 24px auto 40px;
+  padding: 0 20px;
+}
+
+.panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #4a3a30;
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 14px;
+  color: #7a6a5a;
+  margin-bottom: 6px;
+}
+
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e0d5c4;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 15px;
+  color: #4a3a30;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field input[type="text"]:focus,
+.field textarea:focus {
+  border-color: #c99b7a;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.field input[type="file"] {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 14px;
+  color: #7a6a5a;
+}
+
+.btn-save {
+  width: 100%;
+  padding: 16px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e8a87c, #c38d6d);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(195, 141, 109, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-save:active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 10px rgba(195, 141, 109, 0.3);
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #9e8c7a;
+  text-align: center;
+  line-height: 1.6;
+}

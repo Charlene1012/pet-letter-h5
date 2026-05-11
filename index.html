@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>520 宠物来信</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ============ 海报舞台 ============ -->
+  <!-- stage: 负责把 1080x1920 的固定画布等比缩放到手机屏幕宽度 -->
+  <div class="stage" id="stage">
+    <!-- poster: 永远是 1080x1920 的原生画布。所有坐标都基于这个尺寸 -->
+    <div class="poster" id="poster">
+      <!-- Layer 1: 干净背景模板（无旧文字） -->
+      <img
+        class="layer layer-bg"
+        id="layer-bg"
+        src="assets/02_template_blank_all_text.png"
+        alt=""
+        draggable="false"
+      />
+
+      <!-- Layer 2: 宠物照片（polygon 裁切到拍立得窗口内） -->
+      <div class="layer layer-photo" id="layer-photo">
+        <img
+          class="pet-photo"
+          id="pet-photo"
+          src=""
+          alt=""
+          draggable="false"
+        />
+      </div>
+
+      <!-- Layer 3: 昵称徽标 -->
+      <div class="layer layer-text text-petname" id="text-petname"></div>
+
+      <!-- Layer 4: 关键词标签 -->
+      <div class="layer layer-text text-tag" id="text-tag"></div>
+
+      <!-- Layer 5: 信的正文 -->
+      <div class="layer layer-text text-letter" id="text-letter"></div>
+
+      <!-- Layer 6: 品牌 -->
+      <div class="layer layer-brand" id="layer-brand">CHUNKE &#9825;</div>
+
+      <!-- Layer 7: 二维码 -->
+      <div class="layer layer-qr" id="layer-qr">
+        <img class="qr-img" id="qr-img" src="" alt="" draggable="false" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 编辑面板（海报外部） ============ -->
+  <section class="panel">
+    <h2 class="panel-title">定制你的来信</h2>
+
+    <label class="field">
+      <span class="field-label">宠物昵称</span>
+      <input id="input-petname" type="text" maxlength="8" placeholder="小可爱" />
+    </label>
+
+    <label class="field">
+      <span class="field-label">关键词 / 标签</span>
+      <input id="input-tag" type="text" maxlength="18" placeholder="#今天也想和你贴贴#" />
+    </label>
+
+    <label class="field">
+      <span class="field-label">信的正文</span>
+      <textarea id="input-letter" rows="5" maxlength="120" placeholder="谢谢你愿意做我的家人..."></textarea>
+    </label>
+
+    <label class="field">
+      <span class="field-label">上传宠物照片</span>
+      <input id="input-photo" type="file" accept="image/*" />
+    </label>
+
+    <label class="field">
+      <span class="field-label">上传二维码（可选）</span>
+      <input id="input-qr" type="file" accept="image/*" />
+    </label>
+
+    <!-- 保存按钮 —— 明确在海报画布外部 -->
+    <button id="btn-save" class="btn-save" type="button">保存海报到相册</button>
+
+    <p class="hint">
+      提示：保存后的图片为 1080 × 1920 PNG，可直接分享朋友圈或小红书。
+    </p>
+  </section>
+
+  <!-- html2canvas 用于把 1080x1920 DOM 导出为 PNG -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

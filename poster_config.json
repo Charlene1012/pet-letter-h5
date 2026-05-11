@@ -1,0 +1,65 @@
+{
+  "canvas": {
+    "width": 1080,
+    "height": 1920
+  },
+  "baseTemplate": "assets/02_template_blank_all_text.png",
+  "regions": {
+    "petPhoto": {
+      "polygon": [[214, 480], [873, 426], [913, 844], [262, 902]],
+      "rotateApproxDeg": -4,
+      "objectFit": "cover"
+    },
+    "petNameBadge": {
+      "polygon": [[211, 464], [380, 450], [394, 508], [225, 523]],
+      "rotateApproxDeg": -4,
+      "suggestedStyle": {
+        "fontSize": 32,
+        "color": "#FFFFFF",
+        "fontWeight": 700,
+        "textAlign": "center",
+        "letterSpacing": 2
+      }
+    },
+    "tagText": {
+      "polygon": [[295, 943], [778, 905], [797, 961], [309, 1005]],
+      "rotateApproxDeg": -4,
+      "suggestedStyle": {
+        "fontSize": 34,
+        "color": "#6A4A3C",
+        "fontWeight": 500,
+        "textAlign": "center",
+        "letterSpacing": 1
+      }
+    },
+    "letterText": {
+      "polygon": [[234, 1008], [862, 958], [923, 1395], [286, 1444]],
+      "rotateApproxDeg": -4,
+      "suggestedStyle": {
+        "fontSize": 34,
+        "lineHeight": 1.7,
+        "color": "#6A4A3C",
+        "textAlign": "center"
+      }
+    },
+    "qrCode": {
+      "x": 422,
+      "y": 1547,
+      "width": 239,
+      "height": 239
+    },
+    "brand": {
+      "x": 412,
+      "y": 1411,
+      "width": 258,
+      "height": 75
+    }
+  },
+  "defaults": {
+    "petName": "小可爱",
+    "tag": "#今天也想和你贴贴#",
+    "letter": "谢谢你愿意做我的家人\n有你的每一天 都是我最想留住的日子\n520 一起慢慢变老吧",
+    "petPhoto": "assets/sample_pet.jpg",
+    "qrCode": "assets/sample_qr.png"
+  }
+}
