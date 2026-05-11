@@ -1,10 +1,6 @@
 /* ==========================================================
-   520 宠物来信 H5
-   核心原则：
-     1. 海报 .poster 永远是 1080x1920 的原生画布
-     2. 所有子元素定位都基于 1080 坐标系 (px)
-     3. 通过 JS 给 .poster 加 transform: scale(...) 适配手机宽度
-     4. 保存按钮在海报外部，不会被导出
+   520 宠物来信 H5 —— 多页面活动流程
+   流程：上传页 → 事件选择页 → 告白信生成页
    ========================================================== */
 
 * {
@@ -12,36 +8,386 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
-  background: #f6efe6;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #fdf6ef;
   color: #4a3a30;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- Stage：负责把 1080x1920 的海报缩放到屏幕宽度 ---------- */
-.stage {
-  /* 宽度 = 屏幕宽度；高度由 JS 按缩放后的海报高度设置 */
+.hidden { display: none !important; }
+.hidden-input { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+
+/* ============ App Container & Page System ============ */
+.app {
   width: 100vw;
+  min-height: 100vh;
   position: relative;
   overflow: hidden;
-  margin: 0 auto;
-  background: #f6efe6;
 }
 
-/* ---------- Poster：固定 1080x1920 原生画布 ---------- */
+.page {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+  pointer-events: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  position: relative;
+}
+
+.page.exit-left {
+  opacity: 0;
+  transform: translateX(-30%);
+}
+
+.page-inner {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+
+/* ============ Typography ============ */
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 8px;
+  color: #3d2b1f;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #9e8c7a;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+/* ============ Buttons ============ */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f2a07b, #e8876d);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(232, 135, 109, 0.35);
+  transition: transform 0.15s, opacity 0.2s;
+  margin-top: 24px;
+}
+
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #e0cbb8;
+  border-radius: 999px;
+  background: transparent;
+  color: #7a6050;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background 0.2s;
+}
+
+.btn-secondary:active { background: #f5ece3; }
+
+.btn-back {
+  display: inline-block;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 999px;
+  background: #f0e6da;
+  color: #7a6050;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-back:active { background: #e8ddd0; }
+
+/* ============ Page 1: 上传页 ============ */
+
+/* 上传区 */
+.upload-area {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  background: #fff;
+  border: 2px dashed #e0cbb8;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.upload-area:active { border-color: #c99b7a; }
+
+.upload-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.upload-icon { font-size: 48px; }
+.upload-placeholder p { font-size: 14px; color: #9e8c7a; margin: 0; }
+
+/* 照片编辑器 */
+.photo-editor {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+}
+
+.photo-crop-container {
+  width: 100%;
+  height: 80%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.photo-preview {
+  max-width: none;
+  max-height: none;
+  transform-origin: center center;
+  user-select: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+}
+
+.editor-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+}
+
+.btn-editor {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.zoom-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-reupload {
+  position: absolute;
+  top: 12px; right: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* 表单 */
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5a4a3a;
+  margin-bottom: 8px;
+}
+
+.form-hint { font-weight: 400; color: #b0a090; font-size: 12px; }
+
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e8ddd0;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 15px;
+  color: #4a3a30;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: #e8876d; }
+
+/* 类型选择 */
+.type-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border: 1.5px solid #e8ddd0;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.type-btn.active {
+  border-color: #e8876d;
+  background: #fef3ee;
+  color: #d4674e;
+  font-weight: 600;
+}
+
+/* 标签选择 */
+.tag-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-btn {
+  padding: 8px 16px;
+  border: 1.5px solid #e8ddd0;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  color: #7a6050;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-btn.active {
+  border-color: #e8876d;
+  background: #fef3ee;
+  color: #d4674e;
+  font-weight: 600;
+}
+
+/* ============ Page 2: 事件选择页 ============ */
+.events-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.event-card {
+  background: #fff;
+  border: 2px solid #f0e6da;
+  border-radius: 16px;
+  padding: 20px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.event-card:active { transform: scale(0.96); }
+
+.event-card.active {
+  border-color: #e8876d;
+  background: #fef8f5;
+  box-shadow: 0 4px 16px rgba(232, 135, 109, 0.15);
+}
+
+.event-emoji { font-size: 32px; margin-bottom: 8px; }
+.event-text { font-size: 14px; font-weight: 500; color: #5a4a3a; }
+
+.event-card.active .event-text { color: #d4674e; font-weight: 600; }
+
+.events-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.events-footer .btn-primary { flex: 1; margin-top: 0; }
+
+/* ============ Page 3: 告白信生成页 ============ */
+.result-hint {
+  text-align: center;
+  font-size: 13px;
+  color: #b0a090;
+  margin: 0 0 16px;
+}
+
+/* 海报舞台 */
+.poster-stage {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto 24px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+}
+
 .poster {
   position: relative;
   width: 1080px;
   height: 1920px;
-  transform-origin: top left; /* 缩放基点在左上角，便于 stage 高度对齐 */
-  background: #ffffff;
+  transform-origin: top left;
+  background: #fff;
   overflow: hidden;
-  /* 禁止用户交互干扰截图 */
   user-select: none;
   -webkit-user-select: none;
 }
@@ -51,257 +397,124 @@ body {
   pointer-events: none;
 }
 
-/* ---------- Layer 1: 背景模板 ---------- */
+/* Layer 1: BG */
 .layer-bg {
-  top: 0;
-  left: 0;
-  width: 1080px;
-  height: 1920px;
+  top: 0; left: 0;
+  width: 1080px; height: 1920px;
   display: block;
 }
 
-/* ---------- Layer 2: 宠物照片（polygon 裁切） ----------
-   拍立得窗口 polygon (来自 poster_config.json):
-     [214,480] [873,426] [913,844] [262,902]
-   用整张 1080x1920 的 layer 覆盖，clip-path 负责裁形状，
-   内部的 .pet-photo 用 object-fit: cover 填满包围盒。
-*/
+/* Layer 2: Photo clip */
 .layer-photo {
-  top: 0;
-  left: 0;
-  width: 1080px;
-  height: 1920px;
-  /* 直接在全尺寸画布上裁切 —— 坐标即 polygon 原始数值 */
-  clip-path: polygon(
-    214px 480px,
-    873px 426px,
-    913px 844px,
-    262px 902px
-  );
-  -webkit-clip-path: polygon(
-    214px 480px,
-    873px 426px,
-    913px 844px,
-    262px 902px
-  );
+  top: 0; left: 0;
+  width: 1080px; height: 1920px;
+  clip-path: polygon(214px 480px, 873px 426px, 913px 844px, 262px 902px);
+  -webkit-clip-path: polygon(214px 480px, 873px 426px, 913px 844px, 262px 902px);
   overflow: hidden;
 }
 
 .pet-photo {
-  /* 把照片定位到拍立得窗口的包围盒，并略微带一点旋转 */
   position: absolute;
-  /* 包围盒: x ∈ [214, 913], y ∈ [426, 902] => 宽 699, 高 476 */
-  left: 214px;
-  top: 426px;
-  width: 699px;
-  height: 476px;
+  left: 214px; top: 426px;
+  width: 699px; height: 476px;
   object-fit: cover;
   object-position: center;
-  display: block;
-  /* 轻微旋转对齐拍立得的 -4° 倾斜 */
   transform: rotate(-4deg);
   transform-origin: center center;
   background: #eee;
 }
 
-/* ---------- Layer 3/4/5: 动态文字 ----------
-   用每个区域 polygon 的外接矩形做定位框，再微调。
-*/
-
-/* 昵称徽标 polygon 包围盒：x∈[211,394], y∈[450,523] => 183x73 */
+/* Layer 3: Pet name */
 .text-petname {
-  left: 211px;
-  top: 450px;
-  width: 183px;
-  height: 73px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: 211px; top: 450px;
+  width: 183px; height: 73px;
+  display: flex; align-items: center; justify-content: center;
   transform: rotate(-4deg);
-  transform-origin: center center;
-  font-size: 32px;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: 32px; font-weight: 700; color: #fff;
   letter-spacing: 2px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
   white-space: nowrap;
 }
 
-/* 关键词 polygon 包围盒：x∈[295,797], y∈[905,1005] => 502x100 */
+/* Layer 4: Tag */
 .text-tag {
-  left: 295px;
-  top: 905px;
-  width: 502px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: 295px; top: 905px;
+  width: 502px; height: 100px;
+  display: flex; align-items: center; justify-content: center;
   transform: rotate(-4deg);
-  transform-origin: center center;
-  font-size: 34px;
-  font-weight: 500;
-  color: #6a4a3c;
-  letter-spacing: 1px;
-  white-space: nowrap;
+  font-size: 34px; font-weight: 500; color: #6a4a3c;
+  letter-spacing: 1px; white-space: nowrap;
 }
 
-/* 信正文 polygon 包围盒：x∈[234,923], y∈[958,1444] => 689x486 */
+/* Layer 5: Letter body */
 .text-letter {
-  left: 234px;
-  top: 958px;
-  width: 689px;
-  height: 486px;
-  padding: 70px 30px 20px; /* 顶部留出给 tagText 的空间 */
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  left: 234px; top: 958px;
+  width: 689px; height: 486px;
+  padding: 70px 30px 20px;
+  display: flex; align-items: flex-start; justify-content: center;
   text-align: center;
   transform: rotate(-4deg);
-  transform-origin: center center;
-  font-size: 34px;
-  line-height: 1.7;
-  color: #6a4a3c;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-size: 34px; line-height: 1.7; color: #6a4a3c;
+  white-space: pre-wrap; word-break: break-word;
 }
 
-/* 信正文内部用一个盒子保证多行居中 */
-.text-letter > span {
-  display: block;
-  width: 100%;
-}
+.text-letter > span { display: block; width: 100%; }
 
-/* ---------- Layer 6: 品牌 ---------- */
+/* Layer 6: Brand */
 .layer-brand {
-  left: 412px;
-  top: 1411px;
-  width: 258px;
-  height: 75px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: 4px;
-  color: #b08a6b;
-  /* 弱露出：低对比、无描边 */
-  opacity: 0.85;
+  left: 412px; top: 1411px;
+  width: 258px; height: 75px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 600; letter-spacing: 4px;
+  color: #b08a6b; opacity: 0.85;
 }
 
-/* ---------- Layer 7: 二维码 ---------- */
+/* Layer 7: QR */
 .layer-qr {
-  left: 422px;
-  top: 1547px;
-  width: 239px;
-  height: 239px;
-  background: #ffffff;
+  left: 422px; top: 1547px;
+  width: 239px; height: 239px;
+  background: #fff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
 }
 
 .qr-img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
+  width: 100%; height: 100%;
+  display: block; object-fit: cover;
 }
 
-.qr-img[src=""],
-.qr-img:not([src]) {
-  display: none;
+/* Result actions */
+.result-actions {
+  max-width: 380px;
+  margin: 0 auto;
 }
 
-/* ==========================================================
-   编辑面板（海报外部，不会被导出）
-   ========================================================== */
-.panel {
-  max-width: 520px;
-  margin: 24px auto 40px;
-  padding: 0 20px;
+.result-actions .btn-save { margin-top: 0; }
+
+/* ============ Animations ============ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.panel-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #4a3a30;
-  margin: 0 0 16px;
-  text-align: center;
+.page.active .page-inner > * {
+  animation: fadeInUp 0.5s ease both;
 }
 
-.field {
-  display: block;
-  margin-bottom: 14px;
-}
+.page.active .page-inner > *:nth-child(1) { animation-delay: 0.05s; }
+.page.active .page-inner > *:nth-child(2) { animation-delay: 0.1s; }
+.page.active .page-inner > *:nth-child(3) { animation-delay: 0.15s; }
+.page.active .page-inner > *:nth-child(4) { animation-delay: 0.2s; }
+.page.active .page-inner > *:nth-child(5) { animation-delay: 0.25s; }
+.page.active .page-inner > *:nth-child(6) { animation-delay: 0.3s; }
+.page.active .page-inner > *:nth-child(7) { animation-delay: 0.35s; }
+.page.active .page-inner > *:nth-child(8) { animation-delay: 0.4s; }
 
-.field-label {
-  display: block;
-  font-size: 14px;
-  color: #7a6a5a;
-  margin-bottom: 6px;
-}
-
-.field input[type="text"],
-.field textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #e0d5c4;
-  border-radius: 10px;
-  background: #fff;
-  font-size: 15px;
-  color: #4a3a30;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.field input[type="text"]:focus,
-.field textarea:focus {
-  border-color: #c99b7a;
-}
-
-.field textarea {
-  resize: vertical;
-  line-height: 1.6;
-}
-
-.field input[type="file"] {
-  width: 100%;
-  padding: 10px 0;
-  font-size: 14px;
-  color: #7a6a5a;
-}
-
-.btn-save {
-  width: 100%;
-  padding: 16px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #e8a87c, #c38d6d);
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(195, 141, 109, 0.35);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.btn-save:active {
-  transform: translateY(1px);
-  box-shadow: 0 3px 10px rgba(195, 141, 109, 0.3);
-}
-
-.btn-save:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.hint {
-  margin: 14px 0 0;
-  font-size: 12px;
-  color: #9e8c7a;
-  text-align: center;
-  line-height: 1.6;
+/* ============ Responsive ============ */
+@media (max-width: 380px) {
+  .page-inner { padding: 32px 16px 48px; }
+  .page-title { font-size: 20px; }
+  .events-grid { gap: 8px; }
+  .event-card { padding: 16px 8px; }
 }
